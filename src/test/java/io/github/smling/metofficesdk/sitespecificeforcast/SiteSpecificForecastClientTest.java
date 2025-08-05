@@ -53,6 +53,32 @@ class SiteSpecificForecastClientTest {
                                 .setLongitude(-2.5173)
                                 .setIncludeLocationName(true)
                                 .setExcludeParameterMetadata(true)
+                ),
+                Arguments.of(
+                        "Valid Request with unassigned includeLocationName",
+                        apiKey,
+                        new ApiRequest()
+                                .setLatitude(53.4959)
+                                .setLongitude(-2.5173)
+                                .setExcludeParameterMetadata(true)
+                ),
+                Arguments.of(
+                        "Valid Request with unassigned ExcludeParameterMetaData",
+                        apiKey,
+                        new ApiRequest()
+                                .setLatitude(53.4959)
+                                .setLongitude(-2.5173)
+                                .setIncludeLocationName(true)
+                ),
+                Arguments.of(
+                        "Valid Request with Data source BD1",
+                        apiKey,
+                        new ApiRequest()
+                                .setLatitude(53.4959)
+                                .setLongitude(-2.5173)
+                                .setIncludeLocationName(true)
+                                .setExcludeParameterMetadata(true)
+                                .setDataSource("BD1")
                 )
                 // Add more successful case arguments as needed
         );
@@ -69,7 +95,9 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(true)
                                 .setExcludeParameterMetadata(false),
                         false, // expectIllegalArgument
-                        false  // expectNullApiKey
+                        false,  // expectNullApiKey
+                        200,
+                        "{}"
                 ),
                 Arguments.of(
                         "Invalid Longitude",
@@ -80,7 +108,9 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(true)
                                 .setExcludeParameterMetadata(true),
                         false,
-                        false
+                        false,
+                        200,
+                        "{}"
                 ),
                 Arguments.of(
                         "Null API Key",
@@ -91,7 +121,9 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(false)
                                 .setExcludeParameterMetadata(true),
                         true,  // expectIllegalArgument
-                        true   // expectNullApiKey
+                        true,   // expectNullApiKey
+                        200,
+                        "{}"
                 ),
                 Arguments.of(
                         "Invalid API Key",
@@ -102,7 +134,9 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(false)
                                 .setExcludeParameterMetadata(true),
                         false,
-                        false
+                        false,
+                        200,
+                        "{}"
                 ),
                 Arguments.of(
                         "Edge: Min Lat/Lon",
@@ -113,7 +147,9 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(true)
                                 .setExcludeParameterMetadata(false),
                         false,
-                        false
+                        false,
+                        200,
+                        "{}"
                 ),
                 Arguments.of(
                         "Edge: Max Lat/Lon",
@@ -124,12 +160,40 @@ class SiteSpecificForecastClientTest {
                                 .setIncludeLocationName(false)
                                 .setExcludeParameterMetadata(true),
                         false,
-                        false
+                        false,
+                        200,
+                        "{}"
+                ),
+                Arguments.of(
+                        "401 Response",
+                        apiKey,
+                        new ApiRequest()
+                                .setLatitude(90.0)
+                                .setLongitude(180.0)
+                                .setIncludeLocationName(false)
+                                .setExcludeParameterMetadata(true),
+                        false,
+                        false,
+                        401,
+                        "{}"
+                ),
+                Arguments.of(
+                        "Non-JSON response.",
+                        apiKey,
+                        new ApiRequest()
+                                .setLatitude(90.0)
+                                .setLongitude(180.0)
+                                .setIncludeLocationName(false)
+                                .setExcludeParameterMetadata(true),
+                        false,
+                        false,
+                        400,
+                        "Non-JSON response data."
                 )
         );
     }
 
-    @ParameterizedTest(name = "0}")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("provideSuccessRequests")
     @Disabled("For test with real endpoint.")
     void getPointDaily_Success(
@@ -155,7 +219,7 @@ class SiteSpecificForecastClientTest {
         assertTrue(finished, "❌ Test timed out");
     }
 
-    @ParameterizedTest(name = "0}")
+    @ParameterizedTest(name = "{0}")
     @MethodSource("provideFailureRequests")
     @Disabled("For test with real endpoint.")
     void getPointDaily_Failure(
@@ -164,6 +228,8 @@ class SiteSpecificForecastClientTest {
             ApiRequest apiRequest,
             boolean expectIllegalArgument,
             boolean expectNullApiKey,
+            int responseCode,
+            String responseBody,
             TestReporter testReporter
     ) throws InterruptedException {
         if (expectIllegalArgument) {
@@ -194,6 +260,73 @@ class SiteSpecificForecastClientTest {
         assertTrue(finished, "❌ Test timed out");
     }
 
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideSuccessRequests")
+    @Disabled("For test with real endpoint.")
+    void getPointThreeHourly_Success(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        SdkSettings sdkSettings = new SdkSettings(testApiKey);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointThreeHourly(apiRequest, apiResponse -> {
+                    assertNotNull(apiResponse, testName + ": Expected response but got null");
+                    testReporter.publishEntry("✅ " + testName + ": " + apiResponse);
+                    latch.countDown();
+                }, vndError -> {
+                    testReporter.publishEntry("❌ " + testName + ": " + vndError);
+                    fail("Test failed unexpectedly: " + testName);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideFailureRequests")
+    @Disabled("For test with real endpoint.")
+    void getPointThreeHourly_Failure(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            boolean expectIllegalArgument,
+            boolean expectNullApiKey,
+            int responseCode,
+            String responseBody,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        if (expectIllegalArgument) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                SdkSettings sdkSettings = new SdkSettings(testApiKey);
+                new SiteSpecificForecastClient(sdkSettings)
+                        .getPointThreeHourly(apiRequest, r -> {
+                        }, e -> {
+                        });
+            }, testName + ": Expected IllegalArgumentException");
+            return;
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        SdkSettings sdkSettings = new SdkSettings(testApiKey);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointThreeHourly(apiRequest, apiResponse -> {
+                    testReporter.publishEntry("⚠️ " + testName + ": Unexpected success");
+                    fail("Test should not have succeeded: " + testName);
+                    latch.countDown();
+                }, vndError -> {
+                    assertNotNull(vndError, testName + ": Expected error but got null");
+                    testReporter.publishEntry("✅ " + testName + " failed as expected: " + vndError);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
     @ParameterizedTest(name = "{0} [MOCK]")
     @MethodSource("provideSuccessRequests")
     void getPointDaily_Success_Mock(
@@ -203,7 +336,9 @@ class SiteSpecificForecastClientTest {
             TestReporter testReporter
     ) throws InterruptedException {
         configureFor("localhost", MOCK_PORT);
-        stubFor(get(urlPathMatching("/sitespecific/v0/point/daily*")).willReturn(aResponse().withBody("{}")));
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/daily*")).willReturn(aResponse()
+                .withBody("{}"))
+        );
         SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
         CountDownLatch latch = new CountDownLatch(1);
         new SiteSpecificForecastClient(sdkSettings)
@@ -229,10 +364,15 @@ class SiteSpecificForecastClientTest {
             ApiRequest apiRequest,
             boolean expectIllegalArgument,
             boolean expectNullApiKey,
+            int responseCode,
+            String responseBody,
             TestReporter testReporter
     ) throws InterruptedException {
         configureFor("localhost", MOCK_PORT);
-        stubFor(get(urlPathMatching("/sitespecific/v0/point/daily*")).willReturn(aResponse().withBody("{}")));
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/daily*")).willReturn(aResponse()
+                .withStatus(responseCode)
+                .withBody(responseBody))
+        );
         SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
         if (expectIllegalArgument) {
             assertThrows(IllegalArgumentException.class, () -> {
@@ -247,6 +387,152 @@ class SiteSpecificForecastClientTest {
         CountDownLatch latch = new CountDownLatch(1);
         new SiteSpecificForecastClient(sdkSettings)
                 .getPointDaily(apiRequest, apiResponse -> {
+                    testReporter.publishEntry("⚠️ " + testName + ": Unexpected success");
+                    fail("Test should not have succeeded: " + testName);
+                    latch.countDown();
+                }, vndError -> {
+                    assertNotNull(vndError, testName + ": Expected error but got null");
+                    testReporter.publishEntry("✅ " + testName + " failed as expected: " + vndError);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
+    @ParameterizedTest(name = "{0} [MOCK]")
+    @MethodSource("provideSuccessRequests")
+    void getPointThreeHourly_Success_Mock(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        configureFor("localhost", MOCK_PORT);
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/three-hourly*")).willReturn(aResponse()
+                .withBody("{}"))
+        );
+        SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
+        CountDownLatch latch = new CountDownLatch(1);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointThreeHourly(apiRequest, apiResponse -> {
+                    assertNotNull(apiResponse, testName + ": Expected response but got null");
+                    testReporter.publishEntry("✅ " + testName + ": " + apiResponse);
+                    latch.countDown();
+                }, vndError -> {
+                    testReporter.publishEntry("❌ " + testName + ": " + vndError);
+                    fail("Test failed unexpectedly: " + testName);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
+    @ParameterizedTest(name = "{0} [MOCK]")
+    @MethodSource("provideFailureRequests")
+    void getPointThreeHourly_Failure_Mock(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            boolean expectIllegalArgument,
+            boolean expectNullApiKey,
+            int responseCode,
+            String responseBody,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        configureFor("localhost", MOCK_PORT);
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/three-hourly*")).willReturn(aResponse()
+                .withStatus(responseCode)
+                .withBody(responseBody))
+        );
+        SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
+        if (expectIllegalArgument) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                new SiteSpecificForecastClient(sdkSettings)
+                        .getPointThreeHourly(apiRequest, r -> {
+                        }, e -> {
+                        });
+            }, testName + ": Expected IllegalArgumentException");
+            return;
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointThreeHourly(apiRequest, apiResponse -> {
+                    testReporter.publishEntry("⚠️ " + testName + ": Unexpected success");
+                    fail("Test should not have succeeded: " + testName);
+                    latch.countDown();
+                }, vndError -> {
+                    assertNotNull(vndError, testName + ": Expected error but got null");
+                    testReporter.publishEntry("✅ " + testName + " failed as expected: " + vndError);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
+    @ParameterizedTest(name = "{0} [MOCK]")
+    @MethodSource("provideSuccessRequests")
+    void getPointHourly_Success_Mock(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        configureFor("localhost", MOCK_PORT);
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/hourly*")).willReturn(aResponse()
+                .withBody("{}"))
+        );
+        SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
+        CountDownLatch latch = new CountDownLatch(1);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointHourly(apiRequest, apiResponse -> {
+                    assertNotNull(apiResponse, testName + ": Expected response but got null");
+                    testReporter.publishEntry("✅ " + testName + ": " + apiResponse);
+                    latch.countDown();
+                }, vndError -> {
+                    testReporter.publishEntry("❌ " + testName + ": " + vndError);
+                    fail("Test failed unexpectedly: " + testName);
+                    latch.countDown();
+                });
+
+        boolean finished = latch.await(10, TimeUnit.SECONDS);
+        assertTrue(finished, "❌ Test timed out");
+    }
+
+    @ParameterizedTest(name = "{0} [MOCK]")
+    @MethodSource("provideFailureRequests")
+    void getPointHourly_Failure_Mock(
+            String testName,
+            String testApiKey,
+            ApiRequest apiRequest,
+            boolean expectIllegalArgument,
+            boolean expectNullApiKey,
+            int responseCode,
+            String responseBody,
+            TestReporter testReporter
+    ) throws InterruptedException {
+        configureFor("localhost", MOCK_PORT);
+        stubFor(get(urlPathMatching("/sitespecific/v0/point/hourly*")).willReturn(aResponse()
+                .withStatus(responseCode)
+                .withBody(responseBody))
+        );
+        SdkSettings sdkSettings = new SdkSettings(MOCK_BASE_URL, testApiKey, SdkSettings.DEFAULT_MAX_RESPONSE_BODY_SIZE_IN_KB);
+        if (expectIllegalArgument) {
+            assertThrows(IllegalArgumentException.class, () -> {
+                new SiteSpecificForecastClient(sdkSettings)
+                        .getPointHourly(apiRequest, r -> {
+                        }, e -> {
+                        });
+            }, testName + ": Expected IllegalArgumentException");
+            return;
+        }
+
+        CountDownLatch latch = new CountDownLatch(1);
+        new SiteSpecificForecastClient(sdkSettings)
+                .getPointHourly(apiRequest, apiResponse -> {
                     testReporter.publishEntry("⚠️ " + testName + ": Unexpected success");
                     fail("Test should not have succeeded: " + testName);
                     latch.countDown();

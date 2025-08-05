@@ -30,7 +30,29 @@ public class SiteSpecificForecastClient extends BaseClient {
                               Consumer<ApiResponse> onSuccess,
                               Consumer<ApiError> onError
     ) {
-        String path = "/sitespecific/v0/point/daily";
+        this.getPointWithRange(apiRequest, "daily", onSuccess, onError);
+    }
+
+    public void getPointThreeHourly(ApiRequest apiRequest,
+                              Consumer<ApiResponse> onSuccess,
+                              Consumer<ApiError> onError
+    ) {
+        this.getPointWithRange(apiRequest, "three-hourly", onSuccess, onError);
+    }
+
+    public void getPointHourly(ApiRequest apiRequest,
+                                    Consumer<ApiResponse> onSuccess,
+                                    Consumer<ApiError> onError
+    ) {
+        this.getPointWithRange(apiRequest, "hourly", onSuccess, onError);
+    }
+
+    protected void getPointWithRange(ApiRequest apiRequest,
+                                  String range,
+                                  Consumer<ApiResponse> onSuccess,
+                                  Consumer<ApiError> onError
+    ) {
+        String path = "/sitespecific/v0/point/"+range;
 
         Map<String, String> queryParams = createQueryParameterMap(apiRequest);
         String query = buildQuery(queryParams);
