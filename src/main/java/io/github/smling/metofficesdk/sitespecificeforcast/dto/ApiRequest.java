@@ -13,40 +13,45 @@ public class ApiRequest {
         return dataSource;
     }
 
-    public void setDataSource(String dataSource) {
+    public ApiRequest setDataSource(String dataSource) {
         this.dataSource = dataSource;
+        return this;
     }
 
     public Boolean getExcludeParameterMetadata() {
         return excludeParameterMetadata;
     }
 
-    public void setExcludeParameterMetadata(Boolean excludeParameterMetadata) {
+    public ApiRequest setExcludeParameterMetadata(Boolean excludeParameterMetadata) {
         this.excludeParameterMetadata = excludeParameterMetadata;
+        return this;
     }
 
     public Boolean getIncludeLocationName() {
         return includeLocationName;
     }
 
-    public void setIncludeLocationName(Boolean includeLocationName) {
+    public ApiRequest setIncludeLocationName(Boolean includeLocationName) {
         this.includeLocationName = includeLocationName;
+        return this;
     }
 
     public Double getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(Double latitude) {
+    public ApiRequest setLatitude(Double latitude) {
         this.latitude = latitude;
+        return this;
     }
 
     public Double getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(Double longitude) {
+    public ApiRequest setLongitude(Double longitude) {
         this.longitude = longitude;
+        return this;
     }
 
     @Override
