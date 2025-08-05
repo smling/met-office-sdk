@@ -1,3 +1,6 @@
+/**
+ * Represents a symbol used in units or parameters, including its value and type.
+ */
 package io.github.smling.metofficesdk.sitespecificeforcast.dto;
 
 public record Symbol(

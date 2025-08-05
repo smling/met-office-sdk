@@ -17,6 +17,32 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * API client for interacting with the Met Office Site Specific Forecast service.
+ * <p>
+ * Provides high-level methods for obtaining daily, three-hourly, and hourly forecasts via HTTP requests
+ * to the Met Office DataHub endpoint, using `ApiRequest` for request details and handling responses as
+ * `ApiResponse` on success or a subtype of `ApiError` on failure.
+ * </p>
+ *
+ * <p>
+ * Usage example:
+ * <pre>
+ *     SdkSettings settings = new SdkSettings("your-api-key");
+ *     SiteSpecificForecastClient client = new SiteSpecificForecastClient(settings);
+ *     ApiRequest request = ...;
+ *     client.getPointDaily(request, response -> {
+ *         // Handle success
+ *     }, error -> {
+ *         // Handle error
+ *     });
+ * </pre>
+ * </p>
+ *
+ * <p>
+ * For more details, see: <a href="https://datahub.metoffice.gov.uk/docs/f/category/site-specific/overview">GotHub document</a>
+ * </p>
+ */
 public class SiteSpecificForecastClient extends BaseClient {
     private final SdkSettings sdkSettings;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -52,11 +78,11 @@ public class SiteSpecificForecastClient extends BaseClient {
                                   Consumer<ApiResponse> onSuccess,
                                   Consumer<ApiError> onError
     ) {
-        String path = "/sitespecific/v0/point/"+range;
+        String path = "/sitespecific/v0/point/" + range;
 
         Map<String, String> queryParams = createQueryParameterMap(apiRequest);
         String query = buildQuery(queryParams);
-        logger.debug("Constructed URL: {}{}{}",sdkSettings.getBaseUrl(), path, query);
+        logger.debug("Constructed URL: {}{}{}", sdkSettings.getBaseUrl(), path, query);
         getHttpClient(sdkSettings).get()
                 .uri(path + query)
                 .responseSingle((res, bytes) -> bytes
@@ -72,7 +98,7 @@ public class SiteSpecificForecastClient extends BaseClient {
                             onSuccess.accept(response);
                         } else {
                             ApiError error;
-                            if(result.statusCode() == 401) {
+                            if (result.statusCode() == 401) {
                                 error = objectMapper.readValue(result.body(), InvalidCredentialsError.class);
                             } else {
                                 error = objectMapper.readValue(result.body(), VndError.class);
@@ -94,13 +120,13 @@ public class SiteSpecificForecastClient extends BaseClient {
         Map<String, String> queryParams = new LinkedHashMap<>();
         queryParams.put("latitude", apiRequest.getLatitude().toString());
         queryParams.put("longitude", apiRequest.getLongitude().toString());
-        if(Objects.nonNull(apiRequest.getExcludeParameterMetadata())) {
+        if (Objects.nonNull(apiRequest.getExcludeParameterMetadata())) {
             queryParams.put("excludeParameterMetadata", apiRequest.getExcludeParameterMetadata().toString());
         }
-        if(Objects.nonNull(apiRequest.getIncludeLocationName())) {
+        if (Objects.nonNull(apiRequest.getIncludeLocationName())) {
             queryParams.put("includeLocationName", apiRequest.getIncludeLocationName().toString());
         }
-        if(Objects.nonNull(apiRequest.getDataSource())) {
+        if (Objects.nonNull(apiRequest.getDataSource())) {
             queryParams.put("dataSource", apiRequest.getDataSource());
         }
         return queryParams;
