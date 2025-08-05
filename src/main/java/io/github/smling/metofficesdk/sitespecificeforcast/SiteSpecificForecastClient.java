@@ -3,7 +3,9 @@ package io.github.smling.metofficesdk.sitespecificeforcast;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.smling.metofficesdk.core.BaseClient;
 import io.github.smling.metofficesdk.core.SdkSettings;
+import io.github.smling.metofficesdk.core.http.ApiError;
 import io.github.smling.metofficesdk.core.http.HttpResult;
+import io.github.smling.metofficesdk.core.http.InvalidCredentialsError;
 import io.github.smling.metofficesdk.sitespecificeforcast.dto.ApiRequest;
 import io.github.smling.metofficesdk.sitespecificeforcast.dto.ApiResponse;
 import io.github.smling.metofficesdk.sitespecificeforcast.dto.VndError;
@@ -26,7 +28,7 @@ public class SiteSpecificForecastClient extends BaseClient {
 
     public void getPointDaily(ApiRequest apiRequest,
                               Consumer<ApiResponse> onSuccess,
-                              Consumer<VndError> onError
+                              Consumer<ApiError> onError
     ) {
         String path = "/sitespecific/v0/point/daily";
 
@@ -40,14 +42,19 @@ public class SiteSpecificForecastClient extends BaseClient {
                         .map(body -> new HttpResult(res.status().code(), body))
                 )
                 .subscribe(result -> {
-                    logger.debug("Received HTTP {} response", result.statusCode());
+                    logger.debug("Received HTTP {} response, body: {}", result.statusCode(), result.body());
                     try {
                         if (result.statusCode() >= 200 && result.statusCode() < 300) {
                             ApiResponse response = objectMapper.readValue(result.body(), ApiResponse.class);
                             logger.debug("Parsed successful response: {}", response);
                             onSuccess.accept(response);
                         } else {
-                            VndError error = objectMapper.readValue(result.body(), VndError.class);
+                            ApiError error;
+                            if(result.statusCode() == 401) {
+                                error = objectMapper.readValue(result.body(), InvalidCredentialsError.class);
+                            } else {
+                                error = objectMapper.readValue(result.body(), VndError.class);
+                            }
                             logger.warn("Parsed error response: {}", error);
                             onError.accept(error);
                         }
