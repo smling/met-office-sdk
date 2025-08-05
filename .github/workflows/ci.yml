@@ -35,6 +35,9 @@ jobs:
     name: Build, Checkstyle, Dependency Check & Test
     runs-on: ubuntu-latest
 
+    env:
+      METOFFICE_API_KEY: DUMMY
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
