@@ -16,6 +16,7 @@ jobs:
     env:
       OWNER: ${{ github.repository_owner }}
       REPO:  ${{ github.event.repository.name }}
+      METOFFICE_API_KEY: DUMMY
 
     steps:
       - name: Checkout
