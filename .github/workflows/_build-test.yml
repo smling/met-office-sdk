@@ -1,0 +1,44 @@
+name: Reusable Build & Test
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        type: string
+        required: false
+        default: "17"
+      run_checkstyle:
+        type: boolean
+        required: false
+        default: true
+    secrets:
+      METOFFICE_API_KEY:
+        required: false
+
+jobs:
+  build:
+    name: Build, Checkstyle, Dependency Check & Test
+    runs-on: ubuntu-latest
+    env:
+      METOFFICE_API_KEY: ${{ secrets.METOFFICE_API_KEY || 'DUMMY' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java_version }}
+
+      - name: Build with Maven
+        run: mvn -B package --file pom.xml
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Run Checkstyle
+        if: ${{ inputs.run_checkstyle }}
+        run: mvn checkstyle:checkstyle
+
+      - name: Dependency tree (for review)
+        run: mvn dependency:tree
