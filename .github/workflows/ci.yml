@@ -2,10 +2,9 @@
 name: Java CI
 
 on:
-  push:
-    branches: [ "**" ]
   pull_request:
-    branches: [ "**" ]
+    branches-ignore:
+      - main
 
 jobs:
   codeql:
