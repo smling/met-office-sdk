@@ -1,0 +1,26 @@
+# <type>(<scope>): <short summary>
+#
+# Types:
+#   feat    → new feature
+#   fix     → bug fix
+#   docs    → documentation only changes
+#   style   → formatting, no code change
+#   refactor→ code change without feature or bug fix
+#   perf    → performance improvement
+#   test    → adding or updating tests
+#   chore   → maintenance tasks
+#   ci      → CI/CD pipeline changes
+#
+# Scope (optional): part of the project affected (e.g., api, ui, auth)
+# Summary: imperative mood, max 50 chars, no trailing period
+#
+# ---------------- COMMIT MESSAGE ----------------
+<type>(<scope>): <short summary>
+
+# Optional body:
+# - Explain WHAT and WHY, not HOW
+# - Wrap lines at 72 chars
+
+# Optional footer:
+# Closes #123
+# BREAKING CHANGE: description of the breaking change
