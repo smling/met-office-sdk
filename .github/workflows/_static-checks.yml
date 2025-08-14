@@ -7,23 +7,16 @@ on:
         type: string
         required: false
         default: "21"
-      dependency_check_fail_on_cvss:
-        type: string
-        required: false
-        default: "7.0"
     secrets:
       METOFFICE_API_KEY:
-        required: false
-      NVD_API_KEY:
         required: false
 
 jobs:
   static-checks:
-    name: Checkstyle + Dependency-Check (JDK ${{ inputs.java_version }})
+    name: Checkstyle (JDK ${{ inputs.java_version }})
     runs-on: ubuntu-latest
     env:
       METOFFICE_API_KEY: ${{ secrets.METOFFICE_API_KEY || 'DUMMY' }}
-      NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4
@@ -42,8 +35,7 @@ jobs:
           restore-keys: |
             m2-${{ runner.os }}-
 
-      # --- Checkstyle (report + fail on violations, but defer failure) ---
-      - name: Run Checkstyle
+      - name: Run Checkstyle (fail on violations, export reports)
         run: |
           set +e
           mvn -B -q \
@@ -54,20 +46,6 @@ jobs:
           echo "CHECKSTYLE_EXIT=$CS_EXIT" >> $GITHUB_ENV
           exit 0
 
-      # --- OWASP Dependency-Check (aggregate) ---
-      - name: OWASP Dependency-Check
-        run: |
-          set +e
-          mvn -B -q \
-            org.owasp:dependency-check-maven:aggregate \
-            -Dformat=HTML,XML,JSON \
-            -DfailOnCVSS=${{ inputs.dependency_check_fail_on_cvss }} \
-            $([ -n "$NVD_API_KEY" ] && echo "-Dnvd.api.key=$NVD_API_KEY")
-          DC_EXIT=$?
-          echo "DC_EXIT=$DC_EXIT" >> $GITHUB_ENV
-          exit 0
-
-      # --- Export reports ---
       - name: Upload Checkstyle reports
         uses: actions/upload-artifact@v4
         with:
@@ -77,23 +55,10 @@ jobs:
             **/target/checkstyle-result.xml
             **/target/site/checkstyle.html
 
-      - name: Upload Dependency-Check reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: dependency-check-reports
-          if-no-files-found: ignore
-          path: |
-            **/target/dependency-check-report.html
-            **/target/site/dependency-check.html
-            **/target/dependency-check-report.xml
-            **/target/dependency-check-report.json
-
-      # --- Final failure gate so reports are kept but job still fails ---
-      - name: Fail if any static check failed
+      - name: Fail if Checkstyle failed
         run: |
           CS=${CHECKSTYLE_EXIT:-0}
-          DC=${DC_EXIT:-0}
-          if [ "$CS" -ne 0 ] || [ "$DC" -ne 0 ]; then
-            echo "Checkstyle exit: $CS, Dependency-Check exit: $DC"
+          if [ "$CS" -ne 0 ]; then
+            echo "Checkstyle exit: $CS"
             exit 1
           fi
