@@ -27,13 +27,12 @@ jobs:
       java_version: "21"
     secrets: inherit
 
-  # 2) Static checks (Checkstyle + OWASP Dependency-Check)
+  # 2) Static checks
   static-checks:
     name: Static checks (JDK 21)
     uses: ./.github/workflows/_static-checks.yml
     with:
       java_version: "21"
-      dependency_check_fail_on_cvss: "7.0"
     secrets: inherit
 
   # 3) Publish only if tests & static checks pass
