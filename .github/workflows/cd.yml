@@ -112,7 +112,7 @@ jobs:
 
       # SNAPSHOT deploy on main
       - name: Deploy SNAPSHOT to GitHub Packages
-        if: github.ref == 'refs/heads/main')
+        if: github.ref == 'refs/heads/main'
         run: |
           echo "Deploying ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
           mvn -B -ntp -DskipTests=true \
@@ -121,7 +121,7 @@ jobs:
 
       # Auto-tag on main for non-SNAPSHOT
       - name: Create and push tag from version
-        if: github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
+        if: github.ref == 'refs/heads/main'
         run: |
           set -e
           TAG="v${{ steps.ver.outputs.project_version }}"
@@ -137,12 +137,12 @@ jobs:
 
       # Create GitHub Release (for tag pushes and auto-tag above)
       - name: Create GitHub Release (attach artifacts)
-        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT'))
+        if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || format('v{0}', steps.ver.outputs.project_version) }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') || contains(github.ref_name, '-snapshot') }}
           files: |
             **/target/*.jar
             **/target/*.war
