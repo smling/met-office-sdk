@@ -17,6 +17,7 @@ permissions:
   contents: write
   packages: write
   id-token: write   # for build provenance attestation
+  security-events: write
 
 jobs:
   # 1) Tests (run once; CI covers matrix)
