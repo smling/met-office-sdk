@@ -68,3 +68,35 @@ jobs:
             echo "Checkstyle exit: $CS"
             exit 1
           fi
+      # --- Secret screening with Gitleaks ---
+      # Finds hardcoded secrets in history/workspace; produces SARIF + artifact
+      - name: Secret scan (Gitleaks)
+        id: gitleaks
+        run: |
+          set +e
+          # Install gitleaks (static binary)
+          curl -sSL https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o /usr/local/bin/gitleaks
+          chmod +x /usr/local/bin/gitleaks
+          # Scan repository; redact to avoid leaking secrets into logs
+          gitleaks detect \
+            --source . \
+            --redact \
+            --report-format sarif \
+            --report-path gitleaks.sarif
+          GL_EXIT=$?
+          echo "SECRETS_EXIT=$GL_EXIT" >> $GITHUB_ENV
+          # Never fail here; we gate at the end so reports are uploaded
+          exit 0
+
+      - name: Upload Gitleaks SARIF to Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+        if: always()  # upload even if findings exist
+
+      - name: Upload Gitleaks report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          if-no-files-found: ignore
+          path: gitleaks.sarif
