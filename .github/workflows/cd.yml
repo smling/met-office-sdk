@@ -21,6 +21,7 @@ permissions:
   attestations: write   # <-- required for create attestation
 
 jobs:
+
   # 1) Tests (run once; CI covers matrix)
   tests:
     name: Tests (JDK 21)
@@ -64,8 +65,31 @@ jobs:
           server-username: GITHUB_ACTOR
           server-password: GITHUB_TOKEN
 
-      - name: Show effective version
-        run: mvn -q help:evaluate -Dexpression=project.version -DforceStdout
+      - name: Read project version
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Try top-level (non-recursive) first
+          if PV="$(mvn -q -N -DforceStdout help:evaluate -Dexpression=project.version 2>/dev/null | tr -d '\r' | tail -n 1)"; then
+            :
+          else
+            PV=""
+          fi
+          
+          # Fallback: recursive (multi-module) and strip noise just in case
+          if [ -z "$PV" ]; then
+            PV="$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version 2>/dev/null | tr -d '\r' | tail -n 1 || true)"
+          fi
+          
+          # Sanity check: non-empty and not an INFO line
+          if [ -z "$PV" ] || [[ "$PV" =~ ^\[INFO\] ]]; then
+            echo "Failed to resolve project.version" >&2
+            exit 1
+          fi
+          
+          echo "project_version=$PV" >> "$GITHUB_OUTPUT"
+          echo "Resolved project.version: $PV"
 
       # Build once for publishing (tests already ran earlier)
       - name: Build (skip tests)
@@ -86,22 +110,20 @@ jobs:
             **/target/*.war
             **/target/*.zip
 
-      # Deploy snapshot artifacts on main branch (GitHub Packages)
-      - name: Deploy snapshot to GitHub Packages
+      # SNAPSHOT deploy on main
+      - name: Deploy SNAPSHOT to GitHub Packages
         if: github.ref == 'refs/heads/main' && endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
         run: |
-          mvn -B -q -DskipTests \
-            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${OWNER}/${REPO} \
-            deploy
+          echo "Deploying SNAPSHOT ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
+          mvn -B -q -DskipTests deploy
 
-      # ---------- Auto-tag and release deploy on main ----------
+      # Auto-tag on main for non-SNAPSHOT
       - name: Create and push tag from version
         if: github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
         run: |
           set -e
           TAG="v${{ steps.ver.outputs.project_version }}"
           echo "Creating tag $TAG"
-          # If tag already exists, skip
           if git rev-parse "$TAG" >/dev/null 2>&1; then
             echo "Tag $TAG already exists. Skipping tag creation."
           else
@@ -111,7 +133,14 @@ jobs:
             git push origin "$TAG"
           fi
 
-      # ---------- Create GitHub Release on tag push (and also after auto-tag above) ----------
+      # Release deploy (non-SNAPSHOT)
+      - name: Deploy RELEASE to GitHub Packages
+        if: github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
+        run: |
+          echo "Deploying RELEASE ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
+          mvn -B -q -DskipTests deploy
+
+      # Create GitHub Release (for tag pushes and auto-tag above)
       - name: Create GitHub Release (attach artifacts)
         if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT'))
         uses: softprops/action-gh-release@v2
