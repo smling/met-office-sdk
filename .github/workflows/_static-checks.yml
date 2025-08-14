@@ -40,7 +40,6 @@ jobs:
           set +e
           mvn -B -q \
             -Dcheckstyle.consoleOutput=true \
-            -Dcheckstyle.failOnViolation=true \
             checkstyle:checkstyle checkstyle:check
           CS_EXIT=$?
           echo "CHECKSTYLE_EXIT=$CS_EXIT" >> $GITHUB_ENV
