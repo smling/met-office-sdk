@@ -21,8 +21,12 @@ jobs:
       - uses: github/codeql-action/analyze@v3
 
   build:
+    name: Build and Test with Java Versions
+    strategy:
+      matrix:
+        java_version: [17, 21, 24]
     uses: ./.github/workflows/_build-test.yml
     with:
-      java_version: "17"
+      java_version: ${{ matrix.java_version }}
       run_checkstyle: true
     secrets: inherit
