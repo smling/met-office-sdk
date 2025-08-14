@@ -11,8 +11,8 @@ updates:
     labels:
       - "dependencies"
       - "security"
-    ignore:
-        []
+#    ignore:
+#        []
     # examples:
     # - dependency-name: "org.slf4j:*"
     #   versions: ["[0,1.7.36)"]
