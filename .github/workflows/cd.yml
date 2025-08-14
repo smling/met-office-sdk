@@ -111,14 +111,6 @@ jobs:
             git push origin "$TAG"
           fi
 
-      - name: Deploy RELEASE to GitHub Packages
-        if: github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
-        run: |
-          echo "Deploying RELEASE ${{
-            steps.ver.outputs.project_version
-          }} to GitHub Packages…"
-          mvn -B -q -DskipTests deploy
-
       # ---------- Create GitHub Release on tag push (and also after auto-tag above) ----------
       - name: Create GitHub Release (attach artifacts)
         if: startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT'))
