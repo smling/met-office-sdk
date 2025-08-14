@@ -1,18 +1,17 @@
+# .github/workflows/ci.yml
 name: Java CI
 
 on:
   pull_request:
-    branches-ignore:
-      - master
+    branches: ["**"]
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
   codeql:
-    name: CodeQL Code Scanning
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
@@ -32,9 +31,24 @@ jobs:
     secrets: inherit
 
   static-checks:
-    name: Static checks (JDK 21)
+    name: Static checks (Checkstyle on JDK 21)
     uses: ./.github/workflows/_static-checks.yml
     with:
       java_version: "21"
-      dependency_check_fail_on_cvss: "7.0"
     secrets: inherit
+
+  dependency-review:
+    name: Dependency Review (PR diff)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high          # block High/Critical by default
+          comment-summary-in-pr: true
+          # Optional knobs:
+          # deny-licenses: "AGPL-3.0"     # comma-separated list
+          # allow-ghsas: "GHSA-xxxx,GHSA-yyyy"

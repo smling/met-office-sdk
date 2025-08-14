@@ -3,7 +3,7 @@ name: Dependency Check
 on:
   pull_request:
     branches-ignore:
-      - master
+      - main
 
 permissions:
   contents: read
