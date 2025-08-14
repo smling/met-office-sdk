@@ -16,17 +16,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: github/codeql-action/init@v3
-        with: { languages: java }
+        with:
+          languages: java
       - uses: github/codeql-action/autobuild@v3
       - uses: github/codeql-action/analyze@v3
 
-  build:
-    name: Build and Test with Java Versions
+  tests:
+    name: Tests on JDK ${{ matrix.java_version }}
     strategy:
       matrix:
         java_version: [17, 21, 24]
-    uses: ./.github/workflows/_build-test.yml
+    uses: ./.github/workflows/_tests.yml
     with:
       java_version: ${{ matrix.java_version }}
-      run_checkstyle: true
+    secrets: inherit
+
+  static-checks:
+    name: Static checks (JDK 21)
+    uses: ./.github/workflows/_static-checks.yml
+    with:
+      java_version: "21"
+      dependency_check_fail_on_cvss: "7.0"
     secrets: inherit
