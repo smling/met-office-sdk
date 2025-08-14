@@ -1,0 +1,48 @@
+name: Reusable Tests
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        type: string
+        required: false
+        default: "21"
+    secrets:
+      METOFFICE_API_KEY:
+        required: false
+
+jobs:
+  tests:
+    name: Build & Test (JDK ${{ inputs.java_version }})
+    runs-on: ubuntu-latest
+    env:
+      METOFFICE_API_KEY: ${{ secrets.METOFFICE_API_KEY || 'DUMMY' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ inputs.java_version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java_version }}
+
+      - name: Cache Maven repo
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: m2-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            m2-${{ runner.os }}-
+
+      - name: Build & unit tests
+        run: mvn -B -q clean verify
+
+      - name: Upload test reports (Surefire/Failsafe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ inputs.java_version }}
+          if-no-files-found: ignore
+          path: |
+            **/target/surefire-reports/**
+            **/target/failsafe-reports/**

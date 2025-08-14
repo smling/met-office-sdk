@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"            # path to your pom.xml (or root of multi-module)
+    schedule:
+      interval: "daily"       # or "weekly"
+      time: "06:00"
+      timezone: "Europe/London"
+    target-branch: "main"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+    ignore:
+    # examples:
+    # - dependency-name: "org.slf4j:*"
+    #   versions: ["[0,1.7.36)"]
+    allow:
+      - dependency-type: "all"  # or "direct"

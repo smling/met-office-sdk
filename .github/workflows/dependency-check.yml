@@ -1,0 +1,25 @@
+name: Dependency Check
+
+on:
+  pull_request:
+    branches-ignore:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Checks only the dependency *diff* in the PR against GitHub Advisory DB
+      # and can fail based on severity thresholds.
+      - name: Dependency check
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high          # block PRs introducing High/Critical vulns
+          comment-summary-in-pr: true
+          deny-licenses: ""               # set to a CSV like "AGPL-3.0" to block
+          # allow-ghsas: ""               # allowlist specific GHSA IDs if needed

@@ -1,0 +1,64 @@
+name: Reusable Static Checks
+
+on:
+  workflow_call:
+    inputs:
+      java_version:
+        type: string
+        required: false
+        default: "21"
+    secrets:
+      METOFFICE_API_KEY:
+        required: false
+
+jobs:
+  static-checks:
+    name: Checkstyle (JDK ${{ inputs.java_version }})
+    runs-on: ubuntu-latest
+    env:
+      METOFFICE_API_KEY: ${{ secrets.METOFFICE_API_KEY || 'DUMMY' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ inputs.java_version }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ inputs.java_version }}
+
+      - name: Cache Maven repo
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: m2-${{ runner.os }}-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            m2-${{ runner.os }}-
+
+      - name: Run Checkstyle (fail on violations, export reports)
+        run: |
+          set +e
+          mvn -B -q \
+            -Dcheckstyle.consoleOutput=true \
+            -Dcheckstyle.failOnViolation=true \
+            checkstyle:checkstyle checkstyle:check
+          CS_EXIT=$?
+          echo "CHECKSTYLE_EXIT=$CS_EXIT" >> $GITHUB_ENV
+          exit 0
+
+      - name: Upload Checkstyle reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-reports
+          if-no-files-found: ignore
+          path: |
+            **/target/checkstyle-result.xml
+            **/target/site/checkstyle.html
+
+      - name: Fail if Checkstyle failed
+        run: |
+          CS=${CHECKSTYLE_EXIT:-0}
+          if [ "$CS" -ne 0 ]; then
+            echo "Checkstyle exit: $CS"
+            exit 1
+          fi
