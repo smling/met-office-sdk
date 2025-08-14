@@ -87,7 +87,10 @@ jobs:
       # Deploy snapshot artifacts on main branch (GitHub Packages)
       - name: Deploy snapshot to GitHub Packages
         if: github.ref == 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/')
-        run: mvn -B -q -DskipTests deploy
+        run: |
+          mvn -B -q -DskipTests \
+            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/OWNER/REPO \
+            deploy
 
       # Create a GitHub Release on tag pushes and attach build outputs + SBOM
       - name: Create GitHub Release (attach artifacts)
