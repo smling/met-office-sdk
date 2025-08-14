@@ -112,10 +112,12 @@ jobs:
 
       # SNAPSHOT deploy on main
       - name: Deploy SNAPSHOT to GitHub Packages
-        if: github.ref == 'refs/heads/main' && endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
+        if: github.ref == 'refs/heads/main')
         run: |
-          echo "Deploying SNAPSHOT ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
-          mvn -B -q -DskipTests deploy
+          echo "Deploying ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
+          mvn -B -ntp -DskipTests=true \
+            -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${OWNER}/${REPO} \
+            deploy
 
       # Auto-tag on main for non-SNAPSHOT
       - name: Create and push tag from version
@@ -132,13 +134,6 @@ jobs:
             git tag -a "$TAG" -m "Release $TAG"
             git push origin "$TAG"
           fi
-
-      # Release deploy (non-SNAPSHOT)
-      - name: Deploy RELEASE to GitHub Packages
-        if: github.ref == 'refs/heads/main' && !endsWith(steps.ver.outputs.project_version, '-SNAPSHOT')
-        run: |
-          echo "Deploying RELEASE ${{ steps.ver.outputs.project_version }} to GitHub Packages…"
-          mvn -B -q -DskipTests deploy
 
       # Create GitHub Release (for tag pushes and auto-tag above)
       - name: Create GitHub Release (attach artifacts)
